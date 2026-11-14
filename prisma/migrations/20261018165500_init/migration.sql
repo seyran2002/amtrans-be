@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "price" DECIMAL(12,0) NOT NULL DEFAULT 0;

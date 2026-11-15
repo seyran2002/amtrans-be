@@ -27,7 +27,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     } else {
       const enablePolling = this.configService.get<string>('TELEGRAM_ENABLE_POLLING') !== 'false';
       if (enablePolling) {
-        this.startPolling(botToken);
+        void this.startPolling(botToken);
       } else {
         this.logger.log('Telegram polling is disabled by configuration (TELEGRAM_ENABLE_POLLING=false).');
       }
@@ -53,66 +53,68 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async startPolling(botToken: string) {
+  private async startPolling(botToken: string): Promise<void> {
+    if (this.isPolling) {
+      return;
+    }
     this.isPolling = true;
     this.logger.log('Starting Telegram long polling loop...');
 
-    // Run polling loop asynchronously
-    (async () => {
-      while (this.isPolling) {
-        try {
-          const response = await fetch(
-            `https://api.telegram.org/bot${botToken}/getUpdates?offset=${this.offset}&timeout=15`,
-            {
-              signal: AbortSignal.timeout(25000),
-              headers: {
-                Connection: 'keep-alive',
-              },
+    while (this.isPolling) {
+      try {
+        const response = await fetch(
+          `https://api.telegram.org/bot${botToken}/getUpdates?offset=${this.offset}&timeout=15`,
+          {
+            signal: AbortSignal.timeout(25000),
+            headers: {
+              Connection: 'keep-alive',
             },
-          );
+          },
+        );
 
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => '');
-            this.logger.warn(`Telegram polling returned HTTP ${response.status}: ${errorText}`);
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-            continue;
-          }
+        if (!this.isPolling) break;
 
-          const data = await response.json();
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+          this.logger.warn(`Telegram polling returned HTTP ${response.status}: ${errorText}`);
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          continue;
+        }
 
-          if (data.ok && Array.isArray(data.result)) {
-            for (const update of data.result) {
-              this.offset = Math.max(this.offset, update.update_id + 1);
-              await this.handleWebhook(update);
-            }
-          }
-        } catch (err: any) {
-          if (!this.isPolling) {
-            break;
-          }
+        const data = await response.json();
 
-          const errorCode = err?.cause?.code || err?.code;
-          const isTransient =
-            errorCode === 'ECONNRESET' ||
-            errorCode === 'ETIMEDOUT' ||
-            errorCode === 'ECONNREFUSED' ||
-            errorCode === 'ENOTFOUND' ||
-            errorCode === 'UND_ERR_SOCKET' ||
-            err?.name === 'TimeoutError' ||
-            (err?.message && (err.message.includes('fetch failed') || err.message.includes('timeout')));
-
-          if (isTransient) {
-            this.logger.warn(
-              `Telegram polling connection reset or timed out (${errorCode || err?.message || 'unknown'}). Reconnecting in 3s...`,
-            );
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-          } else {
-            this.logger.error('Error in Telegram polling loop:', err);
-            await new Promise((resolve) => setTimeout(resolve, 5000));
+        if (data.ok && Array.isArray(data.result)) {
+          for (const update of data.result) {
+            this.offset = Math.max(this.offset, update.update_id + 1);
+            await this.handleWebhook(update);
           }
         }
+      } catch (err: any) {
+        if (!this.isPolling) {
+          break;
+        }
+
+        const errorCode = err?.cause?.code || err?.code;
+        const isTransient =
+          errorCode === 'ECONNRESET' ||
+          errorCode === 'ETIMEDOUT' ||
+          errorCode === 'ECONNREFUSED' ||
+          errorCode === 'ENOTFOUND' ||
+          errorCode === 'UND_ERR_SOCKET' ||
+          err?.name === 'TimeoutError' ||
+          (err?.message && (err.message.includes('fetch failed') || err.message.includes('timeout')));
+
+        if (isTransient) {
+          this.logger.warn(
+            `Telegram polling connection reset or timed out (${errorCode || err?.message || 'unknown'}). Reconnecting in 3s...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        } else {
+          this.logger.error('Error in Telegram polling loop:', err);
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
       }
-    })();
+    }
   }
 
   async connectTelegram(dto: ConnectTelegramDto) {

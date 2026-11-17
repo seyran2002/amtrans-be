@@ -28,7 +28,7 @@ export class OfficesController {
   }
 
   @Post()
-  @UseGuards(RolesGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createOfficeDto: CreateOfficeDto) {
@@ -36,7 +36,7 @@ export class OfficesController {
   }
 
   @Put(':id')
-  @UseGuards(RolesGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async update(
@@ -47,7 +47,7 @@ export class OfficesController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async remove(@Param('id') id: string) {
@@ -57,7 +57,7 @@ export class OfficesController {
   // ─── Operator Assignment ──────────────────────────────────────────────────
 
   @Post(':officeId/operators/:userId')
-  @UseGuards(RolesGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async assignOperator(
@@ -68,7 +68,7 @@ export class OfficesController {
   }
 
   @Delete(':officeId/operators/:userId')
-  @UseGuards(RolesGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async removeOperator(

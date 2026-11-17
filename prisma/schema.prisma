@@ -175,7 +175,7 @@ model Office {
 
   province    String
   city        String
-  postalCode  String
+  postalCode  String?
   fullAddress String
   phone       String
 

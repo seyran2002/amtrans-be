@@ -53,7 +53,7 @@ export class OfficesService {
         countryId: dto.countryId,
         province: dto.province,
         city: dto.city,
-        postalCode: dto.postalCode,
+        ...(dto.postalCode && { postalCode: dto.postalCode }),
         fullAddress: dto.fullAddress,
         phone: dto.phone,
       },

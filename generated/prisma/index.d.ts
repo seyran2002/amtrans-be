@@ -8970,7 +8970,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode: string | null
     fullAddress: string
     phone: string
     createdAt: Date
@@ -9083,7 +9083,7 @@ export namespace Prisma {
       countryId: string
       province: string
       city: string
-      postalCode: string
+      postalCode: string | null
       fullAddress: string
       phone: string
       createdAt: Date
@@ -13545,7 +13545,7 @@ export namespace Prisma {
     countryId?: StringFilter<"Office"> | string
     province?: StringFilter<"Office"> | string
     city?: StringFilter<"Office"> | string
-    postalCode?: StringFilter<"Office"> | string
+    postalCode?: StringNullableFilter<"Office"> | string | null
     fullAddress?: StringFilter<"Office"> | string
     phone?: StringFilter<"Office"> | string
     createdAt?: DateTimeFilter<"Office"> | Date | string
@@ -13563,7 +13563,7 @@ export namespace Prisma {
     countryId?: SortOrder
     province?: SortOrder
     city?: SortOrder
-    postalCode?: SortOrder
+    postalCode?: SortOrderInput | SortOrder
     fullAddress?: SortOrder
     phone?: SortOrder
     createdAt?: SortOrder
@@ -13584,7 +13584,7 @@ export namespace Prisma {
     countryId?: StringFilter<"Office"> | string
     province?: StringFilter<"Office"> | string
     city?: StringFilter<"Office"> | string
-    postalCode?: StringFilter<"Office"> | string
+    postalCode?: StringNullableFilter<"Office"> | string | null
     fullAddress?: StringFilter<"Office"> | string
     phone?: StringFilter<"Office"> | string
     createdAt?: DateTimeFilter<"Office"> | Date | string
@@ -13602,7 +13602,7 @@ export namespace Prisma {
     countryId?: SortOrder
     province?: SortOrder
     city?: SortOrder
-    postalCode?: SortOrder
+    postalCode?: SortOrderInput | SortOrder
     fullAddress?: SortOrder
     phone?: SortOrder
     createdAt?: SortOrder
@@ -13620,7 +13620,7 @@ export namespace Prisma {
     countryId?: StringWithAggregatesFilter<"Office"> | string
     province?: StringWithAggregatesFilter<"Office"> | string
     city?: StringWithAggregatesFilter<"Office"> | string
-    postalCode?: StringWithAggregatesFilter<"Office"> | string
+    postalCode?: StringNullableWithAggregatesFilter<"Office"> | string | null
     fullAddress?: StringWithAggregatesFilter<"Office"> | string
     phone?: StringWithAggregatesFilter<"Office"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Office"> | Date | string
@@ -14422,7 +14422,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -14440,7 +14440,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -14456,7 +14456,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14474,7 +14474,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14491,7 +14491,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -14502,7 +14502,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14514,7 +14514,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16904,7 +16904,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -16921,7 +16921,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -17080,7 +17080,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17097,7 +17097,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17559,7 +17559,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -17575,7 +17575,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -17621,7 +17621,7 @@ export namespace Prisma {
     countryId?: StringFilter<"Office"> | string
     province?: StringFilter<"Office"> | string
     city?: StringFilter<"Office"> | string
-    postalCode?: StringFilter<"Office"> | string
+    postalCode?: StringNullableFilter<"Office"> | string | null
     fullAddress?: StringFilter<"Office"> | string
     phone?: StringFilter<"Office"> | string
     createdAt?: DateTimeFilter<"Office"> | Date | string
@@ -18066,7 +18066,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18083,7 +18083,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18103,7 +18103,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18120,7 +18120,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18151,7 +18151,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18168,7 +18168,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18194,7 +18194,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18211,7 +18211,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18287,7 +18287,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18304,7 +18304,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18324,7 +18324,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18341,7 +18341,7 @@ export namespace Prisma {
     countryId: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -18537,7 +18537,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18554,7 +18554,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18580,7 +18580,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18597,7 +18597,7 @@ export namespace Prisma {
     countryId?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19180,7 +19180,7 @@ export namespace Prisma {
     id?: string
     province: string
     city: string
-    postalCode: string
+    postalCode?: string | null
     fullAddress: string
     phone: string
     createdAt?: Date | string
@@ -19191,7 +19191,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19207,7 +19207,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19223,7 +19223,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     province?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
-    postalCode?: StringFieldUpdateOperationsInput | string
+    postalCode?: NullableStringFieldUpdateOperationsInput | string | null
     fullAddress?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

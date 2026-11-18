@@ -1,6 +1,5 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import {
   getRegistrationEmailTemplate,
   getOrderReviewEmailTemplate,
@@ -13,37 +12,106 @@ import {
   SupportedLanguage,
 } from './email.templates';
 
+interface ResendAttachment {
+  filename: string;
+  path?: string;
+  content?: string;
+}
+
+interface ResendEmailOptions {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string | string[];
+  headers?: Record<string, string>;
+  attachments?: ResendAttachment[];
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    const rawHost = this.configService.get<string>('EMAIL_HOST') || this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
-    const smtpHost = rawHost.trim();
+    const apiKey = this.configService.get<string>('RESEND_API_KEY')?.trim();
+    if (!apiKey) {
+      this.logger.warn(
+        'RESEND_API_KEY is not configured in environment variables. Email delivery via Resend requires a valid API key.',
+      );
+    }
+  }
 
-    const rawPort = this.configService.get<string>('EMAIL_PORT') || this.configService.get<string>('SMTP_PORT') || '587';
-    const smtpPort = parseInt(rawPort.toString().trim(), 10);
+  private getFromEmail(defaultName = 'AmTrans Express'): string {
+    const configuredFrom =
+      this.configService.get<string>('RESEND_FROM_EMAIL')?.trim() ||
+      this.configService.get<string>('EMAIL_FROM')?.trim();
 
-    const rawUser = this.configService.get<string>('EMAIL_USER') || this.configService.get<string>('SMTP_USER') || this.configService.get<string>('EMAIL');
-    const smtpUser = rawUser ? rawUser.trim() : undefined;
+    if (configuredFrom) {
+      if (configuredFrom.includes('<') && configuredFrom.includes('>')) {
+        return configuredFrom;
+      }
+      return `${defaultName} <${configuredFrom}>`;
+    }
 
-    const rawPass = this.configService.get<string>('EMAIL_PASSWORD') || this.configService.get<string>('SMTP_PASS') || this.configService.get<string>('EMAIL_PASS');
-    const smtpPass = rawPass ? rawPass.trim().replace(/\s+/g, '') : undefined;
+    return `${defaultName} <onboarding@resend.dev>`;
+  }
 
-    const isGmail = smtpHost.toLowerCase().includes('gmail.com');
-    if (isGmail) {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-      });
-    } else {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-      });
+  private getReplyToEmail(): string | undefined {
+    const replyTo =
+      this.configService.get<string>('CONTACT_EMAIL')?.trim();
+    return replyTo || undefined;
+  }
+
+  private async sendResendEmail(options: ResendEmailOptions): Promise<void> {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY')?.trim();
+    if (!apiKey) {
+      this.logger.error('RESEND_API_KEY is not configured in environment variables.');
+      throw new Error('Email service configuration missing (RESEND_API_KEY).');
+    }
+
+    const payload: Record<string, any> = {
+      from: options.from,
+      to: Array.isArray(options.to) ? options.to : [options.to],
+      subject: options.subject,
+      html: options.html,
+    };
+
+    if (options.text) {
+      payload.text = options.text;
+    }
+
+    if (options.replyTo) {
+      payload.reply_to = Array.isArray(options.replyTo) ? options.replyTo : [options.replyTo];
+    }
+
+    if (options.headers && Object.keys(options.headers).length > 0) {
+      payload.headers = options.headers;
+    }
+
+    if (options.attachments && options.attachments.length > 0) {
+      payload.attachments = options.attachments;
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      let errorMessage = errorBody;
+      try {
+        const parsed = JSON.parse(errorBody);
+        errorMessage = parsed.message || errorBody;
+      } catch {
+        // use raw text
+      }
+      throw new Error(`Resend API error (${response.status}): ${errorMessage}`);
     }
   }
 
@@ -52,8 +120,6 @@ export class EmailService {
     userId: string,
     language: SupportedLanguage,
   ): Promise<void> {
-    const rawSenderEmail = this.configService.get<string>('EMAIL_USER') || this.configService.get<string>('EMAIL') || '';
-    const senderEmail = rawSenderEmail.trim();
     const rawFrontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://www.amtrans.am/';
     const frontendUrl = rawFrontendUrl.trim().replace(/\/+$/, '');
 
@@ -64,10 +130,10 @@ export class EmailService {
     const template = getRegistrationEmailTemplate(language, verifyUrl);
 
     try {
-      await this.transporter.sendMail({
-        from: senderEmail ? `"AmTrans Express" <${senderEmail}>` : undefined,
+      await this.sendResendEmail({
+        from: this.getFromEmail('AmTrans Express'),
         to: email.trim(),
-        replyTo: senderEmail,
+        replyTo: this.getReplyToEmail(),
         subject: template.subject,
         html: template.html,
         headers: {
@@ -87,8 +153,6 @@ export class EmailService {
     orderId: string,
     qrCodeUrl?: string | null,
   ): Promise<void> {
-    const rawSenderEmail = this.configService.get<string>('EMAIL_USER') || this.configService.get<string>('EMAIL') || '';
-    const senderEmail = rawSenderEmail.trim();
     const rawFrontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://www.amtrans.am/';
     const cleanFrontendUrl = rawFrontendUrl.trim().replace(/\/+$/, '');
     const pageLink = `${cleanFrontendUrl}/dashboard/manage-orders/${orderId}`;
@@ -96,23 +160,22 @@ export class EmailService {
     const cleanQrUrl = qrCodeUrl ? qrCodeUrl.trim() : null;
     const template = getOrderReviewEmailTemplate(orderId, pageLink, Boolean(cleanQrUrl));
 
-    const attachments: nodemailer.Attachment[] = [];
+    const attachments: ResendAttachment[] = [];
     if (cleanQrUrl) {
       attachments.push({
         filename: `order-${orderId}-qrcode.png`,
         path: cleanQrUrl,
-        cid: 'order-qrcode',
       });
     }
 
     try {
-      await this.transporter.sendMail({
-        from: senderEmail,
+      await this.sendResendEmail({
+        from: this.getFromEmail('AmTrans Express'),
         to: email.trim(),
         subject: template.subject,
         html: template.html,
         text: template.text,
-        attachments,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
       this.logger.log(`Order review notification email sent to ${email} for order ${orderId}`);
     } catch (error: any) {
@@ -131,20 +194,12 @@ export class EmailService {
     message: string;
     submittedAt?: Date;
   }): Promise<void> {
-    const rawSenderEmail =
-      this.configService.get<string>('EMAIL_USER') ||
-      this.configService.get<string>('EMAIL') ||
-      '';
-    const senderEmail = rawSenderEmail.trim();
-
     const rawRecipientEmail =
-      this.configService.get<string>('CONTACT_EMAIL') ||
-      this.configService.get<string>('EMAIL_USER') ||
-      senderEmail;
-    const recipientEmail = rawRecipientEmail.trim();
+      this.configService.get<string>('CONTACT_EMAIL');
+    const recipientEmail = rawRecipientEmail ? rawRecipientEmail.trim() : '';
 
     if (!recipientEmail) {
-      this.logger.error('No recipient email configured for Contact Us (EMAIL_USER or CONTACT_EMAIL is missing).');
+      this.logger.error('No recipient email configured for Contact Us (CONTACT_EMAIL is missing).');
       throw new InternalServerErrorException('Contact email service is temporarily unavailable.');
     }
 
@@ -157,8 +212,8 @@ export class EmailService {
     });
 
     try {
-      await this.transporter.sendMail({
-        from: senderEmail ? `"AmTrans Contact" <${senderEmail}>` : undefined,
+      await this.sendResendEmail({
+        from: this.getFromEmail('AmTrans Contact'),
         to: recipientEmail,
         replyTo: params.email.trim(),
         subject: template.subject,
@@ -182,12 +237,6 @@ export class EmailService {
     text?: string,
     trackingNumber?: string,
   ): Promise<void> {
-    const rawSenderEmail =
-      this.configService.get<string>('EMAIL_USER') ||
-      this.configService.get<string>('EMAIL') ||
-      '';
-    const senderEmail = rawSenderEmail.trim();
-
     const headers: Record<string, string> = {
       'Auto-Submitted': 'auto-generated',
       'X-Auto-Response-Suppress': 'All',
@@ -200,10 +249,10 @@ export class EmailService {
     }
 
     try {
-      await this.transporter.sendMail({
-        from: senderEmail ? `"AmTrans Express" <${senderEmail}>` : undefined,
+      await this.sendResendEmail({
+        from: this.getFromEmail('AmTrans Express'),
         to: email.trim(),
-        replyTo: senderEmail,
+        replyTo: this.getReplyToEmail(),
         subject,
         html,
         text,
@@ -211,23 +260,10 @@ export class EmailService {
       });
       this.logger.log(`Order notification email sent to ${email} (Subject: "${subject}")`);
     } catch (error: any) {
-      const isBadCredentials =
-        error?.responseCode === 535 ||
-        error?.message?.includes('535') ||
-        error?.message?.includes('BadCredentials');
-
-      if (isBadCredentials) {
-        this.logger.error(
-          `SMTP Authentication Failed for ${email} (Subject: "${subject}"): Invalid login: 535-5.7.8 BadCredentials. ` +
-          `Please verify that EMAIL_USER ("${senderEmail}") has 2-Step Verification enabled and that EMAIL_PASSWORD in .env ` +
-          `is an active 16-character Google App Password (generate at https://myaccount.google.com/apppasswords).`,
-        );
-      } else {
-        this.logger.error(
-          `Failed to send order notification email to ${email} (Subject: "${subject}"): ${error?.message || error}`,
-          error?.stack,
-        );
-      }
+      this.logger.error(
+        `Failed to send order notification email to ${email} (Subject: "${subject}"): ${error?.message || error}`,
+        error?.stack,
+      );
       // Email failures must not throw or roll back order operations
       return;
     }

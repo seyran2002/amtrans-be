@@ -175,7 +175,7 @@ export function getEstimateSubmittedTelegramTemplate(params: TelegramEstimateNot
 
 **Պատվերի համար՝** ${trackingNumber}
 
-**Առաջարկվող առաքման արժեք՝** ${estimatedPrice} AMD
+**Առաջարկվող առաքման սակագին՝** ${estimatedPrice} AMD
 
 Խնդրում ենք մուտք գործել Ձեր անձնական էջ՝ առաջարկը դիտելու և ընդունելու կամ չեղարկելու համար։
 
@@ -191,7 +191,7 @@ Our operator has submitted a proposed shipping price for your order.
 
 **Tracking Number:** ${trackingNumber}
 
-**Proposed Shipping Price:** ${estimatedPrice} AMD
+**Proposed Shipping tariff:** ${estimatedPrice} AMD
 
 Please visit your account to review the estimate and accept or cancel it.
 
@@ -207,7 +207,7 @@ Please visit your account to review the estimate and accept or cancel it.
 
 **Трек-номер:** ${trackingNumber}
 
-**Предложенная стоимость доставки:** ${estimatedPrice} AMD
+**Предложенная тариф доставки:** ${estimatedPrice} AMD
 
 Пожалуйста, войдите в личный кабинет, чтобы ознакомиться с предложением и принять или отменить его.
 

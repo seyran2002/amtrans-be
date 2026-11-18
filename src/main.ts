@@ -8,7 +8,8 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
-      'https://amtrans.am',
+      'https://www.amtrans.am',
+      'https://amtrans.am'
     ],
     credentials: true,
   })

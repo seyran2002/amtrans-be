@@ -2,12 +2,8 @@ import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import {
   getRegistrationEmailTemplate,
-  getOrderReviewEmailTemplate,
   getContactEmailTemplate,
-  getOrderNotificationEmailTemplate,
   getEstimateSubmittedEmailTemplate,
-  getEstimateAcceptedEmailTemplate,
-  getEstimateCancelledEmailTemplate,
   getCustomerStatusUpdateEmailTemplate,
   SupportedLanguage,
 } from './email.templates';
@@ -145,46 +141,6 @@ export class EmailService {
     } catch (error) {
       this.logger.error(`Failed to send registration confirmation email to ${email}:`, error);
       throw new InternalServerErrorException('Failed to send verification email. Please try again later.');
-    }
-  }
-
-  async sendOrderReviewNotification(
-    email: string,
-    orderId: string,
-    qrCodeUrl?: string | null,
-  ): Promise<void> {
-    const rawFrontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://www.amtrans.am/';
-    const cleanFrontendUrl = rawFrontendUrl.trim().replace(/\/+$/, '');
-    const pageLink = `${cleanFrontendUrl}/dashboard/manage-orders/${orderId}`;
-
-    const cleanQrUrl = qrCodeUrl ? qrCodeUrl.trim() : null;
-    const template = getOrderReviewEmailTemplate(orderId, pageLink, Boolean(cleanQrUrl));
-
-    const attachments: ResendAttachment[] = [];
-    if (cleanQrUrl) {
-      attachments.push({
-        filename: `order-${orderId}-qrcode.png`,
-        path: cleanQrUrl,
-      });
-    }
-
-    try {
-      await this.sendResendEmail({
-        from: this.getFromEmail('AmTrans Express'),
-        to: email.trim(),
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
-      this.logger.log(`Order review notification email sent to ${email} for order ${orderId}`);
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to send order review notification email to ${email} for order ${orderId}: ${error?.message || error}`,
-        error?.stack,
-      );
-      // Email failures must not roll back the created order
-      return;
     }
   }
 
@@ -335,7 +291,8 @@ export class EmailService {
   }
 
   /**
-   * Dispatches an order review / creation notification email to the operator(s).
+   * Operators are notified via Telegram only.
+   * Email notifications for operators are disabled; this method is a safe no-op.
    */
   async sendOperatorOrderNotification(
     email: string,
@@ -347,29 +304,14 @@ export class EmailService {
       language?: string;
     },
   ): Promise<void> {
-    if (!email || !email.trim()) {
-      this.logger.warn(
-        `Skipping operator notification email for order ${params.trackingNumber}: recipient email is empty`,
-      );
-      return;
-    }
-
-    const template = getOrderNotificationEmailTemplate(status, params);
-    if (!template) {
-      return;
-    }
-
-    await this.sendOrderNotificationEmail(
-      email.trim(),
-      template.subject,
-      template.html,
-      template.text,
-      params.trackingNumber,
+    this.logger.debug(
+      `Operator email notifications are disabled (Telegram only). Skipping email to ${email} for order ${params.trackingNumber} (${status}).`,
     );
   }
 
   /**
-   * Dispatches an estimate decision notification email to the operator(s).
+   * Operators are notified via Telegram only.
+   * Email notifications for operators are disabled; this method is a safe no-op.
    */
   async sendOperatorEstimateDecisionNotification(
     email: string,
@@ -381,24 +323,22 @@ export class EmailService {
       language?: string;
     },
   ): Promise<void> {
-    if (!email || !email.trim()) {
-      this.logger.warn(
-        `Skipping operator estimate decision email for order ${params.trackingNumber}: recipient email is empty`,
-      );
-      return;
-    }
+    this.logger.debug(
+      `Operator email notifications are disabled (Telegram only). Skipping estimate decision (${decision}) email to ${email} for order ${params.trackingNumber}.`,
+    );
+  }
 
-    const template =
-      decision === 'accept'
-        ? getEstimateAcceptedEmailTemplate(params)
-        : getEstimateCancelledEmailTemplate(params);
-
-    await this.sendOrderNotificationEmail(
-      email.trim(),
-      template.subject,
-      template.html,
-      template.text,
-      params.trackingNumber,
+  /**
+   * Operators are notified via Telegram only.
+   * Email notifications for operators are disabled; this method is a safe no-op.
+   */
+  async sendOrderReviewNotification(
+    email: string,
+    orderId: string,
+    qrCodeUrl?: string | null,
+  ): Promise<void> {
+    this.logger.debug(
+      `Operator email notifications are disabled (Telegram only). Skipping review email to ${email} for order ${orderId}.`,
     );
   }
 }

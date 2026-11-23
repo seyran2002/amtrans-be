@@ -755,6 +755,33 @@ describe('OrdersService', () => {
         service.updateStatus('order-cancelled-1', OrderStatus.REGISTERED),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should send Telegram notification to operators when status becomes PENDING_ESTIMATE via updateStatus', async () => {
+      const existingOrder = {
+        id: 'order-status-change-1',
+        trackingNumber: 'AMT-UPDT01',
+        status: OrderStatus.UNDER_REVIEW,
+        fromOfficeId: 'office-1',
+        fromOffice: { city: 'Yerevan', province: 'Yerevan' },
+      };
+
+      prisma.order.findUnique.mockResolvedValue(existingOrder);
+      prisma.order.update.mockResolvedValue({
+        ...existingOrder,
+        status: OrderStatus.PENDING_ESTIMATE,
+      });
+      prisma.user.findMany.mockResolvedValue([
+        { id: 'op-1', telegramChatId: 'chat-operator-888' },
+      ]);
+
+      await service.updateStatus(existingOrder.id, OrderStatus.PENDING_ESTIMATE);
+
+      expect(telegramService.sendMessage).toHaveBeenCalledWith(
+        'chat-operator-888',
+        expect.stringContaining('Shipping Price Estimate Required'),
+        { parse_mode: 'HTML' },
+      );
+    });
   });
 
   describe('findMyOrders', () => {

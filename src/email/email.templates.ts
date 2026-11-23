@@ -1,13 +1,8 @@
 import { OrderStatus } from '../../generated/prisma';
 import {
-  TelegramOrderNotificationParams,
   TelegramEstimateNotificationParams,
-  TelegramEstimateDecisionNotificationParams,
   TelegramCustomerStatusNotificationParams,
-  getOrderNotificationMessage,
   getEstimateSubmittedTelegramTemplate,
-  getEstimateAcceptedTelegramTemplate,
-  getEstimateCancelledTelegramTemplate,
   getCustomerStatusUpdateTelegramTemplate,
 } from '../telegram/telegram.template';
 
@@ -151,88 +146,6 @@ export function getRegistrationEmailTemplate(
   };
 
   return templates[language] || templates.hy;
-}
-
-export interface OrderReviewEmailTemplateContent {
-  subject: string;
-  html: string;
-  text: string;
-}
-
-export function getOrderReviewEmailTemplate(
-  orderId: string,
-  pageLink: string,
-  hasQrCode: boolean,
-): OrderReviewEmailTemplateContent {
-  const subject = 'New Order Requires Review — AmTrans';
-
-  const text = `Hello,
-
-A new order has been registered in AmTrans and requires your review.
-
-Order ID: ${orderId}
-
-Status: UNDER_REVIEW
-
-Please review the order details and take the necessary action.
-
-View Order in Dashboard:
-${pageLink}
-
-AmTrans Team`;
-
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }
-    .container { max-width: 600px; background: #ffffff; margin: 0 auto; padding: 32px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .header { text-align: center; border-bottom: 1px solid #eef2f5; padding-bottom: 20px; margin-bottom: 24px; }
-    .header h1 { color: #1e293b; margin: 0; font-size: 22px; font-weight: 700; }
-    .content { color: #475569; font-size: 15px; line-height: 1.6; }
-    .order-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
-    .order-info { margin: 6px 0; font-size: 15px; color: #334155; }
-    .badge { display: inline-block; background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
-    .qr-container { text-align: center; margin: 24px 0; }
-    .qr-image { width: 160px; height: 160px; border-radius: 6px; border: 1px solid #e2e8f0; padding: 8px; background: #ffffff; }
-    .btn-wrapper { text-align: center; margin: 28px 0; }
-    .btn { background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block; }
-    .footer { font-size: 14px; color: #64748b; border-top: 1px solid #eef2f5; padding-top: 20px; margin-top: 28px; }
-  </style>
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px;">
-  <div class="container" style="max-width: 600px; background: #ffffff; margin: 0 auto; padding: 32px; border-radius: 8px; border: 1px solid #eef2f5; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <div class="header" style="text-align: center; border-bottom: 1px solid #eef2f5; padding-bottom: 20px; margin-bottom: 24px;">
-      <h1 style="color: #1e293b; margin: 0; font-size: 22px; font-weight: 700;">AmTrans</h1>
-    </div>
-    <div class="content" style="color: #475569; font-size: 15px; line-height: 1.6;">
-      <p style="margin-top: 0;">Hello,</p>
-      <p>A new order has been registered in AmTrans and requires your review.</p>
-      <div class="order-card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px 20px; margin: 20px 0;">
-        <p class="order-info" style="margin: 6px 0; font-size: 15px; color: #334155;"><strong>Order ID:</strong> ${orderId}</p>
-        <p class="order-info" style="margin: 6px 0; font-size: 15px; color: #334155;"><strong>Status:</strong> <span class="badge" style="display: inline-block; background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-size: 13px;">UNDER_REVIEW</span></p>
-      </div>
-      <p>Please review the order details and take the necessary action.</p>
-      ${hasQrCode ? `
-      <div class="qr-container" style="text-align: center; margin: 24px 0;">
-        <img src="cid:order-qrcode" alt="Order QR Code" class="qr-image" width="160" height="160" style="display: inline-block; border-radius: 6px; border: 1px solid #e2e8f0; padding: 8px; background: #ffffff;" />
-      </div>
-      ` : ''}
-      <div class="btn-wrapper" style="text-align: center; margin: 28px 0;">
-        <a href="${pageLink}" class="btn" target="_blank" style="background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block;">View Order in Dashboard</a>
-      </div>
-    </div>
-    <div class="footer" style="font-size: 14px; color: #64748b; border-top: 1px solid #eef2f5; padding-top: 20px; margin-top: 28px;">
-      <p style="margin: 0; color: #334155; font-weight: 600;">AmTrans Team</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-  return { subject, html, text };
 }
 
 export interface ContactEmailTemplateParams {
@@ -498,22 +411,9 @@ export function formatNotificationEmail(
   };
 }
 
-export function getOrderNotificationEmailTemplate(
-  status: OrderStatus | string,
-  params: TelegramOrderNotificationParams,
-): EmailTemplateContent | null {
-  const textContent = getOrderNotificationMessage(status, params);
-  if (!textContent) return null;
-
-  const tracking = params.trackingNumber || 'New Order';
-  const subject =
-    status === OrderStatus.PENDING_ESTIMATE
-      ? `AmTrans: Price Estimate Required for Order ${tracking}`
-      : `AmTrans: New Order ${tracking} Received`;
-
-  return formatNotificationEmail(subject, textContent, params.orderUrl, tracking);
-}
-
+/**
+ * Customer shipping price estimate email template.
+ */
 export function getEstimateSubmittedEmailTemplate(
   params: TelegramEstimateNotificationParams,
 ): EmailTemplateContent {
@@ -523,24 +423,9 @@ export function getEstimateSubmittedEmailTemplate(
   return formatNotificationEmail(subject, textContent, params.orderUrl, tracking);
 }
 
-export function getEstimateAcceptedEmailTemplate(
-  params: TelegramEstimateDecisionNotificationParams,
-): EmailTemplateContent {
-  const textContent = getEstimateAcceptedTelegramTemplate(params);
-  const tracking = params.trackingNumber || 'Order';
-  const subject = `AmTrans: Customer Accepted Estimate for Order ${tracking}`;
-  return formatNotificationEmail(subject, textContent, params.orderUrl, tracking);
-}
-
-export function getEstimateCancelledEmailTemplate(
-  params: TelegramEstimateDecisionNotificationParams,
-): EmailTemplateContent {
-  const textContent = getEstimateCancelledTelegramTemplate(params);
-  const tracking = params.trackingNumber || 'Order';
-  const subject = `AmTrans: Customer Rejected Estimate for Order ${tracking}`;
-  return formatNotificationEmail(subject, textContent, params.orderUrl, tracking);
-}
-
+/**
+ * Customer order status update email template.
+ */
 export function getCustomerStatusUpdateEmailTemplate(
   status: OrderStatus | string,
   params: TelegramCustomerStatusNotificationParams,

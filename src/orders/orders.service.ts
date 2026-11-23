@@ -630,7 +630,7 @@ export class OrdersService implements OnModuleInit {
       });
     }
 
-    // 7. Notify operators via Telegram and Email (dual-channel, non-blocking)
+    // 7. Notify operators via Telegram only (non-blocking)
     await this.notifyOperatorsViaTelegram(finalOrder);
 
     // 8. Notify customer of order submission via Telegram and Email (dual-channel, non-blocking)
@@ -864,7 +864,14 @@ export class OrdersService implements OnModuleInit {
     });
 
     if (data.status && data.status !== order.status) {
+      // When status becomes PENDING_ESTIMATE on update, notify operators via Telegram (same as on create)
+      if (data.status === OrderStatus.PENDING_ESTIMATE) {
+        await this.notifyOperatorsViaTelegram(updatedOrder);
+      }
       await this.notifyCustomerOfStatusUpdate(updatedOrder, data.status);
+    } else if (data.status === OrderStatus.PENDING_ESTIMATE && routeChanged) {
+      // If route changed to a route requiring inquiry while already in PENDING_ESTIMATE, notify operators
+      await this.notifyOperatorsViaTelegram(updatedOrder);
     }
 
     return updatedOrder;
@@ -898,6 +905,10 @@ export class OrdersService implements OnModuleInit {
     });
 
     if (oldStatus !== status) {
+      // When status becomes PENDING_ESTIMATE on status update, notify operators via Telegram
+      if (status === OrderStatus.PENDING_ESTIMATE) {
+        await this.notifyOperatorsViaTelegram(updatedOrder);
+      }
       await this.notifyCustomerOfStatusUpdate(updatedOrder, status);
     }
 
@@ -1297,72 +1308,6 @@ export class OrdersService implements OnModuleInit {
     });
   }
 
-  private async notifyOfficeUsersOfNewOrder(order: {
-    id: string;
-    trackingNumber?: string;
-    status: OrderStatus;
-    fromOfficeId: string;
-    qrCode?: string | null;
-  }): Promise<void> {
-    if (
-      (order.status !== OrderStatus.UNDER_REVIEW && order.status !== OrderStatus.PENDING_ESTIMATE) ||
-      !order.fromOfficeId
-    ) {
-      return;
-    }
-
-    try {
-      const officeId = order.fromOfficeId.trim();
-      const officeUsers = await this.prisma.user.findMany({
-        where: { officeId },
-        select: { id: true, email: true },
-      });
-
-      if (!officeUsers || officeUsers.length === 0) {
-        this.logger.log(
-          `No users found with officeId "${officeId}" for order ${order.id}. Email notification skipped.`,
-        );
-        return;
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const validEmails = Array.from(
-        new Set(
-          officeUsers
-            .map((u) => u.email?.trim())
-            .filter((email): email is string => Boolean(email && emailRegex.test(email))),
-        ),
-      );
-
-      if (validEmails.length === 0) {
-        this.logger.warn(
-          `Users found for officeId "${officeId}" have no valid email address for order ${order.id}.`,
-        );
-        return;
-      }
-
-      await Promise.allSettled(
-        validEmails.map(async (email) => {
-          try {
-            await this.emailService.sendOrderReviewNotification(
-              email,
-              order.id,
-              order.qrCode,
-            );
-          } catch (err: any) {
-            this.logger.warn(
-              `Order review notification to ${email} for order ${order.id} failed: ${err?.message || err}`,
-            );
-          }
-        }),
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to process office notifications for order ${order.id}: ${error?.message || error}`,
-      );
-    }
-  }
-
   private async notifyOperatorsViaTelegram(order: {
     id: string;
     trackingNumber?: string | null;
@@ -1389,10 +1334,6 @@ export class OrdersService implements OnModuleInit {
         where: {
           role: Role.OPERATOR,
           officeId,
-          OR: [
-            { telegramChatId: { not: null } },
-            { email: { not: '' } },
-          ],
         },
         select: {
           id: true,
@@ -1441,6 +1382,10 @@ export class OrdersService implements OnModuleInit {
 
       const telegramMessage = getOrderNotificationMessage(order.status, notificationParams);
 
+      if (!telegramMessage) {
+        return;
+      }
+
       // Telegram recipients: deduplicate by telegramChatId
       const validTelegramRecipients = operators.filter(
         (op) => op.telegramChatId && op.telegramChatId.trim() !== '',
@@ -1453,53 +1398,28 @@ export class OrdersService implements OnModuleInit {
         return true;
       });
 
-      // Email recipients: deduplicate by valid email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const validEmailRecipients = operators.filter(
-        (op) => op.email && emailRegex.test(op.email.trim()),
-      );
-      const seenEmails = new Set<string>();
-      const uniqueEmailRecipients = validEmailRecipients.filter((op) => {
-        const email = op.email.trim().toLowerCase();
-        if (seenEmails.has(email)) return false;
-        seenEmails.add(email);
-        return true;
+      if (uniqueTelegramRecipients.length === 0) {
+        this.logger.debug(
+          `No operators with telegramChatId found for office ${officeId} (order ${order.id}). Telegram notification skipped.`,
+        );
+        return;
+      }
+
+      // Operators are notified via Telegram only (no email)
+      const telegramPromises = uniqueTelegramRecipients.map(async (op) => {
+        try {
+          await this.telegramService.sendMessage(op.telegramChatId!.trim(), telegramMessage, { parse_mode: 'HTML' });
+        } catch (err: any) {
+          this.logger.warn(
+            `Failed to send Telegram message to operator ${op.id} (chatId ${op.telegramChatId}) for order ${order.id}: ${err?.message || err}`,
+          );
+        }
       });
 
-      // Send via Telegram independently
-      const telegramPromises = (telegramMessage && uniqueTelegramRecipients.length > 0)
-        ? uniqueTelegramRecipients.map(async (op) => {
-          try {
-            await this.telegramService.sendMessage(op.telegramChatId!.trim(), telegramMessage, { parse_mode: 'HTML' });
-          } catch (err: any) {
-            this.logger.warn(
-              `Failed to send Telegram message to operator ${op.id} (chatId ${op.telegramChatId}) for order ${order.id}: ${err?.message || err}`,
-            );
-          }
-        })
-        : [];
-
-      // Send via Email independently
-      const emailPromises = uniqueEmailRecipients.length > 0
-        ? uniqueEmailRecipients.map(async (op) => {
-          try {
-            await this.emailService.sendOperatorOrderNotification(
-              op.email.trim(),
-              order.status,
-              notificationParams,
-            );
-          } catch (err: any) {
-            this.logger.warn(
-              `Failed to send order notification email to operator ${op.id} (${op.email}) for order ${order.id}: ${err?.message || err}`,
-            );
-          }
-        })
-        : [];
-
-      await Promise.allSettled([...telegramPromises, ...emailPromises]);
+      await Promise.allSettled(telegramPromises);
     } catch (error: any) {
       this.logger.error(
-        `Failed to process dual-channel operator notifications for order ${order.id}: ${error?.message || error}`,
+        `Failed to process operator Telegram notifications for order ${order.id}: ${error?.message || error}`,
       );
     }
   }
@@ -1626,10 +1546,6 @@ export class OrdersService implements OnModuleInit {
         where: {
           role: Role.OPERATOR,
           officeId,
-          OR: [
-            { telegramChatId: { not: null } },
-            { email: { not: '' } },
-          ],
         },
         select: {
           id: true,
@@ -1657,6 +1573,10 @@ export class OrdersService implements OnModuleInit {
           ? getEstimateAcceptedTelegramTemplate(templateParams)
           : getEstimateCancelledTelegramTemplate(templateParams);
 
+      if (!message) {
+        return;
+      }
+
       // Telegram recipients: deduplicate by telegramChatId
       const validTelegramRecipients = operators.filter(
         (op) => op.telegramChatId && op.telegramChatId.trim() !== '',
@@ -1669,53 +1589,28 @@ export class OrdersService implements OnModuleInit {
         return true;
       });
 
-      // Email recipients: deduplicate by email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const validEmailRecipients = operators.filter(
-        (op) => op.email && emailRegex.test(op.email.trim()),
-      );
-      const seenEmails = new Set<string>();
-      const uniqueEmailRecipients = validEmailRecipients.filter((op) => {
-        const email = op.email.trim().toLowerCase();
-        if (seenEmails.has(email)) return false;
-        seenEmails.add(email);
-        return true;
+      if (uniqueTelegramRecipients.length === 0) {
+        this.logger.debug(
+          `No operators with telegramChatId found for office ${officeId} on estimate decision (${decision}). Telegram notification skipped.`,
+        );
+        return;
+      }
+
+      // Operators are notified via Telegram only (no email)
+      const telegramPromises = uniqueTelegramRecipients.map(async (op) => {
+        try {
+          await this.telegramService.sendMessage(op.telegramChatId!.trim(), message, { parse_mode: 'HTML' });
+        } catch (err: any) {
+          this.logger.warn(
+            `Failed to send Telegram estimate decision message to operator ${op.id} (chatId ${op.telegramChatId}) for order ${order.id}: ${err?.message || err}`,
+          );
+        }
       });
 
-      // Send via Telegram independently
-      const telegramPromises = (message && uniqueTelegramRecipients.length > 0)
-        ? uniqueTelegramRecipients.map(async (op) => {
-          try {
-            await this.telegramService.sendMessage(op.telegramChatId!.trim(), message, { parse_mode: 'HTML' });
-          } catch (err: any) {
-            this.logger.warn(
-              `Failed to send Telegram estimate decision message to operator ${op.id} (chatId ${op.telegramChatId}) for order ${order.id}: ${err?.message || err}`,
-            );
-          }
-        })
-        : [];
-
-      // Send via Email independently
-      const emailPromises = (uniqueEmailRecipients.length > 0)
-        ? uniqueEmailRecipients.map(async (op) => {
-          try {
-            await this.emailService.sendOperatorEstimateDecisionNotification(
-              op.email.trim(),
-              decision,
-              templateParams,
-            );
-          } catch (err: any) {
-            this.logger.warn(
-              `Failed to send estimate decision email to operator ${op.id} (${op.email}) for order ${order.id}: ${err?.message || err}`,
-            );
-          }
-        })
-        : [];
-
-      await Promise.allSettled([...telegramPromises, ...emailPromises]);
+      await Promise.allSettled(telegramPromises);
     } catch (error: any) {
       this.logger.error(
-        `Failed to process dual-channel operator estimate decision notifications for order ${order.id} (${decision}): ${error?.message || error}`,
+        `Failed to process operator estimate decision Telegram notifications for order ${order.id} (${decision}): ${error?.message || error}`,
         error?.stack,
       );
     }
